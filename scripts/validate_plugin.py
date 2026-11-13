@@ -45,6 +45,8 @@ def validate_skill(host):
         hint = metadata.get("argument-hint")
         require(isinstance(hint, str) and hint.strip(),
                 f"{path}: argument-hint must be a nonempty string")
+        require(metadata.get("disable-model-invocation") is True,
+                f"{path}: Claude skill must require explicit invocation")
 
 
 def main():

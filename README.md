@@ -26,7 +26,7 @@ Update saved skill invocations to `code-review-multifactor:code-review-multifact
 
 ## Use
 
-In Claude Code, invoke the namespaced skill:
+In Claude Code, invoke the skill explicitly by name. Automatic model invocation is disabled with `disable-model-invocation: true`. Use the namespaced plugin command:
 
 ```text
 /code-review-multifactor:code-review-multifactor OWNER/REPO#123
@@ -94,7 +94,7 @@ The plugin contains its own skill instructions and has no build step or external
 
 ## Validation
 
-GitHub Actions validates both hosts' skill frontmatter, host skill paths, plugin/catalog metadata, release version consistency, and whitespace on pull requests and pushes to `main`.
+GitHub Actions validates both hosts' skill frontmatter, host skill paths, Claude's explicit invocation policy, plugin/catalog metadata, release version consistency, and whitespace on pull requests and pushes to `main`.
 
 Run the metadata and skill checks locally with:
 
