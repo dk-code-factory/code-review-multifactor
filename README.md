@@ -87,3 +87,14 @@ The Claude skill was adapted from the original `review-multiactor.md`. It retain
 - `claude/skills/review-multiactor/SKILL.md`: Claude Code review workflow.
 
 The plugin contains its own skill instructions and has no build step or external runtime helper dependency.
+
+## Validation
+
+GitHub Actions validates both hosts' skill frontmatter, host skill paths, plugin/catalog metadata, release version consistency, and whitespace on pull requests and pushes to `main`.
+
+Run the metadata and skill checks locally with:
+
+```sh
+python -m pip install PyYAML==6.0.3
+python scripts/validate_plugin.py
+```
