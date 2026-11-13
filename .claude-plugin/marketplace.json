@@ -7,8 +7,8 @@
     {
       "name": "code-review-multifactor",
       "source": "./",
-      "description": "Multi-actor pull request review with native Claude Code reviewers.",
-      "version": "1.1.1"
+      "description": "Report-only multi-actor pull request review with native Claude Code reviewers.",
+      "version": "1.1.2"
     }
   ]
 }
