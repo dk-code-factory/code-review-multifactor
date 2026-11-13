@@ -1,6 +1,6 @@
 ---
-name: review-multiactor
-description: Review a GitHub pull request with three independent actors (E2E Reviewer, Independent Inventor, Code Inspector) and return complete local reports with reconciled findings and proposed diffs/comments. Never create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including pending reviews. Use for "/review-multiactor [PR]", "multi-actor review" or any request for a thorough independent review of a PR.
+name: code-review-multifactor
+description: Review a GitHub pull request with three independent actors (E2E Reviewer, Independent Inventor, Code Inspector) and return complete local reports with reconciled findings and proposed diffs/comments. Never create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including pending reviews. Use for "/code-review-multifactor:code-review-multifactor [PR]", "multi-actor review" or any request for a thorough independent review of a PR.
 argument-hint: "[PR URL, OWNER/REPO#N, or number] [design document URL]"
 ---
 

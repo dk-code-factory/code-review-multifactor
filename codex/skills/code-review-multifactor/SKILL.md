@@ -1,11 +1,11 @@
 ---
-name: review-multiactor
-description: Review a GitHub pull request with three independent Codex subagents (E2E Reviewer, Independent Inventor, Code Inspector) and return complete local reports with reconciled findings and proposed diffs/comments. Never create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including pending reviews. Use for "$review-multiactor", "multi-actor review", or a request for a thorough independent PR review.
+name: code-review-multifactor
+description: Review a GitHub pull request with three independent Codex subagents (E2E Reviewer, Independent Inventor, Code Inspector) and return complete local reports with reconciled findings and proposed diffs/comments. Never create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including pending reviews. Use for "$code-review-multifactor", "multi-actor review", or a request for a thorough independent PR review.
 ---
 
-# Multi-actor PR review
+# code-review-multifactor
 
-Invocation: `$review-multiactor [PR URL, OWNER/REPO#N, or number] [design document URL]`. Both arguments are optional; a number requires a known repository. This skill runs a report-only review and returns proposed fixes as local diffs.
+Invocation: `$code-review-multifactor [PR URL, OWNER/REPO#N, or number] [design document URL]`. Both arguments are optional; a number requires a known repository. This skill runs a report-only review and returns proposed fixes as local diffs.
 
 ## Report-only boundary
 

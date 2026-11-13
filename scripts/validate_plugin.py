@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = "code-review-multifactor"
-SKILL = "review-multiactor"
+SKILL = "code-review-multifactor"
 
 
 def require(condition, message):
