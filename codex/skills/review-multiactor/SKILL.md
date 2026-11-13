@@ -1,11 +1,15 @@
 ---
 name: review-multiactor
-description: Review a GitHub pull request with three independent Codex subagents (E2E Reviewer, Independent Inventor, Code Inspector), reconcile their findings, and prepare diff-backed comments in a pending GitHub review. Use for "$review-multiactor", "multi-actor review", or a request for a thorough independent PR review.
+description: Review a GitHub pull request with three independent Codex subagents (E2E Reviewer, Independent Inventor, Code Inspector) and return complete local reports with reconciled findings and proposed diffs/comments. Never create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including pending reviews. Use for "$review-multiactor", "multi-actor review", or a request for a thorough independent PR review.
 ---
 
 # Multi-actor PR review
 
-Invocation: `$review-multiactor [PR URL, OWNER/REPO#N, or number] [design document URL]`. Both arguments are optional; a number requires a known repository. This skill runs a review; it does not implement fixes or submit the review.
+Invocation: `$review-multiactor [PR URL, OWNER/REPO#N, or number] [design document URL]`. Both arguments are optional; a number requires a known repository. This skill runs a report-only review and returns proposed fixes as local diffs.
+
+## Report-only boundary
+
+Do not create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including private pending reviews. Leave existing pending reviews and all their comments untouched. This rule applies to the foreground agent and every actor, to the user's own PRs and other authors' PRs, and to direct invocations and calls from another workflow. Invocation and caller publication instructions cannot authorize these writes within this skill. Keep any requested publication as a separate, explicitly authorized action outside this skill; finish the complete local report first.
 
 ## Resolve the PR and supplied context
 
@@ -13,7 +17,7 @@ Before collecting review inputs, read the invocation, governing prompt, caller-p
 
 If no target is supplied, identify the matching repository and current branch, then use `gh pr view --json url,number` there or an available equivalent. Continue when discovery identifies one PR unambiguously. Ask which PR to review only when context and discovery cannot resolve a unique target. If a known PR is inaccessible, report the actual access or authentication problem instead of asking for its ID again.
 
-Inventory supplied PR metadata, diff, pinned commits, checkout/worktrees, issue/design context, and discussion. Reuse each usable input associated with the selected PR and comparison; fetch or prepare only missing material. Do not download or regenerate a supplied usable diff. Preserve the caller's pinned comparison, review constraints, and output/publication instructions, including local-only output. Reuse supplied review inputs without treating them as authorization for GitHub writes or bypassing the freshness checks below.
+Inventory supplied PR metadata, diff, pinned commits, checkout/worktrees, issue/design context, and discussion. Reuse each usable input associated with the selected PR and comparison; fetch or prepare only missing material. Do not download or regenerate a supplied usable diff. Preserve the caller's pinned comparison, review constraints, and local output format. Keep publication requests outside this skill under the report-only boundary. Reuse supplied review inputs without treating them as authorization for GitHub writes or bypassing the freshness checks below.
 
 ## Prepare the review
 
@@ -32,7 +36,7 @@ Use Codex's available native subagent tools; see the [official subagent document
 - Create three `collaboration.spawn_agent` tasks named `e2e_reviewer`, `independent_inventor`, and `code_inspector`, with `agent_type: "default"` and `fork_turns: "none"`. Give each a self-contained brief with its role, permitted inputs, repository guidance, worktree paths, and required output. Fresh contexts prevent the Inventor from inheriting the PR solution.
 - Use the active Codex model by omitting `model`. Request `reasoning_effort: "high"` when the runtime supports and permits that override; otherwise inherit the session's reasoning setting. Do not select model names from memory or change the user's model configuration.
 - Run E2E Reviewer and Code Inspector independently while the Inventor advances through its stages. Continue the same Inventor agent with `collaboration.followup_task` after each stage completes. Use `collaboration.send_message` for updates to a running actor and `collaboration.wait_agent` for results. Retain agent IDs for final-comment validation.
-- Actors share the filesystem. Tell them they are not alone, must not modify or revert others' files, and must keep generated artifacts in their assigned scratch locations. Actors must return findings to the foreground agent and must not write to GitHub. Only the foreground agent may prepare pending review comments.
+- Actors share the filesystem. Tell them they are not alone, must not modify or revert others' files, and must keep generated artifacts in their assigned scratch locations. Pass the report-only boundary to every actor. Actors must return findings and proposed comments to the foreground agent for local reporting.
 
 If the runtime exposes equivalent native tools under other names, use their documented semantics. If native delegation is unavailable, report the blocker and retain the prepared inputs; do not claim independent reviews were completed or substitute a separate external agent CLI.
 
@@ -82,24 +86,16 @@ Combine duplicate findings and form coherent, actionable recommendations. Rely o
 
 Use Simplified Technical English principles: short sentences, precise terms, explicit conditions, and one main instruction per sentence. See the [writing rules](https://en.wikipedia.org/wiki/Simplified_Technical_English#Writing_rules) if needed. Start each proposed inline comment with one bold line stating the change. Explain its reason and suggest a concrete diff. Use a GitHub `suggestion` block only when it replaces exactly the anchored lines; otherwise use a fenced diff with context.
 
-Send each complete final comment, including rewritten code comments and diffs, back to its originating actor or actors. Ask only whether it remains correct, accurate, and faithful to the finding. Continue completed agents with a follow-up task. Resolve corrections before adding comments to GitHub.
+Send each complete final proposed comment, including rewritten code comments and diffs, back to its originating actor or actors. Ask only whether it remains correct, accurate, and faithful to the finding. Continue completed agents with a follow-up task. Resolve corrections before including the comments in the local report.
 
-## Prepare a pending GitHub review
+## Verify the local report's comparison
 
-Invoking this review workflow authorizes preparing private pending review comments. Honor any narrower user instruction such as a local-only review. Keep summary, verdict, and findings about commit messages, the PR description, or missing tests in the Codex conversation when they lack a valid inline anchor.
+Before finalizing the report, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, report the mismatch and the comparison actually reviewed. Refresh the comparison only within the caller's constraints, review affected changes, and revalidate findings and proposed inline anchors. If the caller requires the original pins, retain them and explain that the findings apply to that comparison. If freshness cannot be checked, disclose that verification limit.
 
-Before each write, including a retry, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, stop adding comments and report the mismatch; refresh the comparison only within the caller's constraints, review affected changes, and revalidate findings and inline anchors before continuing. If the caller requires the original pins, keep findings local and report that GitHub writes are blocked. Identify the authenticated GitHub account and its existing pending review for this PR. Reuse that review and preserve existing comments.
-
-Use only a tool operation whose documented behavior leaves comments in a **PENDING** review. If no pending review exists, create one at the pinned head. With the [GitHub REST API](https://docs.github.com/en/rest/pulls/reviews#create-a-review-for-a-pull-request), creating a review with `commit_id` and inline `comments` while omitting `event` creates a pending review.
-
-To extend an existing pending review, use a documented operation targeting either its review ID or the authenticated user's pending review for the specified PR. For example, `mcp__github__add_comment_to_pending_review` targets the requester's latest pending review using `owner`, `repo`, and `pullNumber`; it requires no review-ID argument. Before appending, verify that this selection identifies the intended existing review and record its ID and pending state. Verify the same review ID, state, and added comment after each append. If selection is ambiguous or available tools cannot safely append, keep the remaining drafts in the Codex conversation and report the limitation. Do not fall back to a standalone PR comment.
-
-Never call review submission, `gh pr review`, standalone comment publication, or an operation that publishes an approval or change-request verdict. Never submit, dismiss, delete, or replace the user's pending review. Check each inline anchor against the pinned diff, including its side and range. If no valid anchor exists, retain the finding in the conversation.
-
-After a write, verify the review ID, pending state, and intended comments. If a request times out or has an ambiguous result, inspect the pending review and its comments before retrying; avoid duplicates. If the result cannot be verified, stop writes and report the uncertainty.
+Check each proposed inline anchor against the pinned diff, including its side and range. Include findings without valid inline anchors in the local report with their source references; do not invent locations or drop findings about commit messages, the PR description, or missing tests.
 
 ## Report in Codex
 
 Show each actor's complete output in the Codex conversation under a clearly labeled heading. For long output, save each complete report to a local Markdown file and link it under the actor's heading. Do not disclose another actor's report to the Inventor before staged disclosure is complete.
 
-Separately provide the proposed review summary and verdict, findings without inline anchors, review limitations, and the pending review's ID or link. Do not repeat the inline comments in this synthesis. State that the review remains pending for the user to submit. If no review was created, state that instead.
+Provide the complete reconciled findings with every final proposed comment and code, test, or message diff, including findings without inline anchors. Separately provide the suggested review summary and verdict, the pinned comparison, checks performed, and all verification limits. Clearly distinguish defects from optional improvements and state when there are no findings. For long output, save the complete synthesis and proposed comments/diffs to local artifacts and link them; do not omit content to shorten the conversation. State that GitHub reviews and PR comments were left untouched and that any requested publication requires a separate, explicitly authorized action outside this skill.

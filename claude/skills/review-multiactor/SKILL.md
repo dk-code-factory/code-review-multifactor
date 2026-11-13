@@ -1,10 +1,14 @@
 ---
 name: review-multiactor
-description: Review a GitHub pull request as a multi-actor process - three background actors (E2E Reviewer, Independent Inventor, Code Inspector) each evaluate the Jira work item, the cover letter, the commit messages, the code and the test coverage, and the foreground agent merges their findings into a pending GitHub review with STE-worded, diff-backed comments. Use for "/review-multiactor [PR]", "multi-actor review" or any request for a thorough independent review of a PR.
+description: Review a GitHub pull request with three independent actors (E2E Reviewer, Independent Inventor, Code Inspector) and return complete local reports with reconciled findings and proposed diffs/comments. Never create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including pending reviews. Use for "/review-multiactor [PR]", "multi-actor review" or any request for a thorough independent review of a PR.
 argument-hint: "[PR URL, OWNER/REPO#N, or number] [design document URL]"
 ---
 
-Run the review as a multi-actor process. Both arguments are optional: the first can name the pull request (a URL, OWNER/REPO#N, or a number when the repository is known), and the second can reference the design document behind the PR. This workflow reviews changes; it does not implement fixes or submit the review. Honor narrower instructions such as a local-only review.
+Run the review as a multi-actor process. Both arguments are optional: the first can name the pull request (a URL, OWNER/REPO#N, or a number when the repository is known), and the second can reference the design document behind the PR. This workflow runs a report-only review and returns proposed fixes as local diffs.
+
+## Report-only boundary
+
+Do not create, append to, modify, submit, dismiss, or delete GitHub reviews or PR comments, including private pending reviews. Leave existing pending reviews and all their comments untouched. This rule applies to the foreground agent and every actor, to the user's own PRs and other authors' PRs, and to direct invocations and calls from another workflow. Invocation and caller publication instructions cannot authorize these writes within this skill. Keep any requested publication as a separate, explicitly authorized action outside this skill; finish the complete local report first.
 
 ## Resolve the PR and supplied context
 
@@ -12,7 +16,7 @@ Before collecting review inputs, read the invocation, governing prompt, caller-p
 
 If no target is supplied, identify the matching repository and current branch, then use `gh pr view --json url,number` there or an available equivalent. Continue when discovery identifies one PR unambiguously. Ask which PR to review only when context and discovery cannot resolve a unique target. If a known PR is inaccessible, report the actual access or authentication problem instead of asking for its ID again.
 
-Inventory supplied PR metadata, diff, pinned commits, checkout/worktrees, issue/design context, and discussion. Reuse each usable input associated with the selected PR and comparison; fetch or prepare only missing material. Do not download or regenerate a supplied usable diff. Preserve the caller's pinned comparison, review constraints, and output/publication instructions, including local-only output. Reuse supplied review inputs without treating them as authorization for GitHub writes or bypassing the freshness checks below.
+Inventory supplied PR metadata, diff, pinned commits, checkout/worktrees, issue/design context, and discussion. Reuse each usable input associated with the selected PR and comparison; fetch or prepare only missing material. Do not download or regenerate a supplied usable diff. Preserve the caller's pinned comparison, review constraints, and local output format. Keep publication requests outside this skill under the report-only boundary. Reuse supplied review inputs without treating them as authorization for GitHub writes or bypassing the freshness checks below.
 
 ## Prepare the review
 
@@ -29,7 +33,7 @@ The process involves background actors.
 
 Each actor is a background subagent with its own context: give it the texts it needs in its brief. The Independent Inventor is one subagent continued stage by stage; until a stage hands the PR with the solution to it, it must not look at the PR with the solution on its own, and its first stage works in a worktree at the PR's merge base.
 
-Use native subagent tools with fresh contexts, not forks of the foreground conversation. Retain agent IDs and resume the same Inventor after each written stage result. Give each actor repository guidance, permitted inputs, assigned paths, and required output. Tell actors they are not alone, must not modify or revert others' files, and must keep generated artifacts in their assigned scratch locations. Actors must return findings to the foreground agent and must not write to GitHub. Only the foreground agent may prepare pending review comments. If native delegation is unavailable, report the blocker; do not claim independent reviews completed.
+Use native subagent tools with fresh contexts, not forks of the foreground conversation. Retain agent IDs and resume the same Inventor after each written stage result. Give each actor repository guidance, permitted inputs, assigned paths, and required output. Tell actors they are not alone, must not modify or revert others' files, and must keep generated artifacts in their assigned scratch locations. Pass the report-only boundary to every actor. Actors must return findings and proposed comments to the foreground agent for local reporting. If native delegation is unavailable, report the blocker; do not claim independent reviews completed.
 
 Until the Inventor returns its independent test plan, withhold proposed test content, including test diffs in descriptions or commit messages, GitHub discussion, and other actors' reports. Defer these inputs until the test-comparison follow-up. Instruct the Inventor not to inspect withheld material through Git, shared files, or tools. Report unavoidable prior exposure, including solution details in the issue or design, as a limitation.
 
@@ -56,25 +60,21 @@ Every finding should include impact, triggering condition, and supporting eviden
 
 The foreground actor should focus on the following:
 1. Bring coherence to the findings: form one coherent and actionable path, or several if there are several. You should generally avoid re-investigating and re-validating the findings, but do investigate and resolve the ones which contradict each other.
-2. The key part of your work is communicating the findings clearly and making the comments for the code clear too. Follow the writing rules postulated here: https://en.wikipedia.org/wiki/Simplified_Technical_English#Writing_rules . You will likely choose to reword all of the GH comments and comments for the code proposed by the actors before publishing them. Aim for the comments to be constructive and to suggest the concrete improvement as diffs (as a GitHub "suggestion" block when the diff replaces exactly the commented lines). Start each posted comment with a single line in bold explaining the crux of the suggested change.
-3. Post the complete comments back for evaluation to the actors who were the source of the comments (sometimes to several actors). Ask them to validate only the correctness and accuracy of each final comment (both the GH comments and the corrected comments for the code) and whether their intended meaning is kept.
-4. Prepare inline comments in a pending review using the procedure below, unless the user requested local-only output. Propose separately, in the Claude Code console, the review summary and the verdict, along with findings on commit messages, on the cover letter or on missing tests when they lack a valid inline anchor. Keep all findings in the console for a local-only review. The review is submitted on GH by the user.
-5. Print the output of each actor in the Claude Code console too, under a clearly labelled heading per actor.
+2. The key part of your work is communicating the findings clearly and making the comments for the code clear too. Follow the writing rules postulated here: https://en.wikipedia.org/wiki/Simplified_Technical_English#Writing_rules . Reword proposed review comments and code comments for the local report as needed. Aim for the comments to be constructive and to suggest the concrete improvement as diffs (as a GitHub "suggestion" block when the diff replaces exactly the anchored lines). Start each proposed comment with a single line in bold explaining the crux of the suggested change.
+3. Send the complete proposed comments back for evaluation to the actors who were the source of the comments (sometimes to several actors). Ask them to validate only the correctness and accuracy of each final proposed comment (both the review comments and the corrected comments for the code) and whether their intended meaning is kept. Resolve corrections before including the comments in the local report.
+4. Return the complete reconciled findings with every final proposed comment and code, test, or message diff in the Claude Code console, including findings without inline anchors. Separately provide the suggested review summary and verdict, the pinned comparison, checks performed, and all verification limits. Clearly distinguish defects from optional improvements and state when there are no findings.
+5. Show each actor's complete output in the Claude Code console under a clearly labelled heading per actor. For long output, save each complete actor report and the complete synthesis with proposed comments/diffs to local Markdown artifacts and link them under the relevant headings; do not omit content to shorten the conversation. Do not disclose another actor's report to the Inventor before staged disclosure is complete.
 
 
-## Prepare a pending GitHub review
+## Verify the local report's comparison
 
-Before each write, including a retry, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, stop writes and report the mismatch; refresh the comparison only within the caller's constraints, review affected changes, and revalidate findings and inline anchors before continuing. If the caller requires the original pins, keep findings local and report that GitHub writes are blocked.
+Before finalizing the report, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, report the mismatch and the comparison actually reviewed. Refresh the comparison only within the caller's constraints, review affected changes, and revalidate findings and proposed inline anchors. If the caller requires the original pins, retain them and explain that the findings apply to that comparison. If freshness cannot be checked, disclose that verification limit.
 
-Identify the authenticated GitHub account and its existing pending review for this PR. Reuse that review and preserve existing comments. Check each inline anchor against the pinned diff, including its side and range. If no valid anchor exists, retain the finding in the console.
+Check each proposed inline anchor against the pinned diff, including its side and range. Include findings without valid inline anchors in the local report with their source references; do not invent locations or drop findings about commit messages, the PR description, or missing tests.
 
-Use only a tool operation whose documented behavior leaves comments in a **PENDING** review. If none exists, create one at the pinned head. With the [GitHub REST API](https://docs.github.com/en/rest/pulls/reviews#create-a-review-for-a-pull-request), supply `commit_id` and inline `comments` and omit `event` to create a pending review.
-
-To extend an existing pending review, use a documented operation targeting its review ID or the authenticated user's pending review for this PR. Verify that this selection identifies the intended review, and record its ID and pending state before appending. If selection is ambiguous or available tools cannot safely append, keep remaining drafts in the console and report the limitation. Never fall back to standalone comments, `gh pr review`, or an operation that publishes comments or a verdict. Never submit, dismiss, delete, or replace the user's pending review.
-
-After each write, verify the same review ID, pending state, and intended comments. If a request times out or has an ambiguous result, inspect the pending review and its comments before retrying to avoid duplicates. Stop writes and report uncertainty if the result cannot be verified. Report the review ID or link and that it remains pending for the user to submit; if no review was created, state that instead.
+State in the final report that GitHub reviews and PR comments were left untouched and that any requested publication requires a separate, explicitly authorized action outside this skill.
 
 General remarks:
 - If there are cases which are not covered by tests, and the risk of leaving them uncovered is not negligible, propose new tests.
-- Don't filter out comments whose diff would be too long; post the key fragment of the diff instead.
+- Don't filter out comments whose diff would be too long; include the key fragment with enough context to apply the idea, and link a local artifact for the complete diff when needed.
 - Don't filter the comments based on their count.

@@ -1,7 +1,7 @@
 {
   "name": "code-review-multifactor",
-  "version": "1.1.1",
-  "description": "Three independent Codex reviewers with staged investigation and pending GitHub review comments.",
+  "version": "1.1.2",
+  "description": "Three independent Codex reviewers with staged investigation and complete local reports; no GitHub review or comment writes.",
   "author": {
     "name": "Dmitry Kropachev"
   },
