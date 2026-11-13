@@ -1,0 +1,14 @@
+{
+  "name": "code-review-multifactor",
+  "owner": {
+    "name": "dk-code-factory"
+  },
+  "plugins": [
+    {
+      "name": "code-review-multifactor",
+      "source": "./",
+      "description": "Multi-actor pull request review with native Claude Code reviewers.",
+      "version": "1.1.0"
+    }
+  ]
+}

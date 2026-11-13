@@ -1,0 +1,11 @@
+{
+  "name": "code-review-multifactor",
+  "version": "1.1.0",
+  "description": "Three native Claude Code reviewers with staged investigation and pending GitHub review comments.",
+  "author": {
+    "name": "Dmitry Kropachev"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/dk-code-factory/code-review-multifactor",
+  "skills": "./claude/skills/"
+}
