@@ -43,11 +43,11 @@ Each host's skill coordinates three native subagents:
 - **Independent Inventor:** develops an independent solution plan, then evaluates the description, production code, and tests through staged disclosure.
 - **Code Inspector:** checks reuse, clarity, performance, and unnecessary code.
 
-The foreground agent reconciles findings and returns final comments to their source actors for validation. It prepares inline findings in the authenticated user's pending GitHub review and leaves submission to the user. Existing pending comments are preserved. In Codex, a local-only request keeps all findings in the conversation.
+The foreground agent reconciles findings and returns final comments to their source actors for validation. It prepares inline findings in the authenticated user's pending GitHub review and leaves submission to the user. Existing pending comments are preserved. A local-only request keeps all findings in the host conversation.
 
-Both workflows review in detached worktrees and propose improvements as diffs. The Codex workflow also pins the PR comparison and revalidates head, base, and merge-base changes before further review writes.
+Both workflows review in detached worktrees and propose improvements as diffs. Both pin the PR comparison and revalidate head, base, and merge-base changes before further review writes. Actors return findings without writing to GitHub. The Independent Inventor returns its test plan before receiving proposed tests or GitHub discussion.
 
-The Claude skill is imported unchanged from the original `review-multiactor.md`. It retains its Opus, Fable, and Sonnet model requests with high effort and its reference to `/home/hollow/.aws/credentials`; check those environment assumptions before using that workflow. Codex uses its separately maintained native adaptation.
+The Claude skill was adapted from the original `review-multiactor.md`. It retains its Opus, Fable, and Sonnet model requests with high effort. Codex uses its separately maintained native adaptation.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ The Claude skill is imported unchanged from the original `review-multiactor.md`.
 - Git and a matching local repository clone.
 - GitHub access through connected tools or authenticated `gh`, including permission to prepare pending reviews when requested.
 - Access to the linked issue, Jira work item, or design document when available. Inaccessible context is reported as a limitation.
-- The repository's build and test tools when execution is needed. The Codex workflow uses a local emulator or an explicitly authorized test target and the configured AWS credential chain for DynamoDB probes.
+- The repository's build and test tools when execution is needed. Both workflows use a local emulator or an explicitly authorized test target and the configured AWS credential chain for DynamoDB probes.
 
 ## Layout
 
@@ -64,6 +64,6 @@ The Claude skill is imported unchanged from the original `review-multiactor.md`.
 - `.claude-plugin/plugin.json`: Claude Code plugin metadata.
 - `.claude-plugin/marketplace.json`: Claude Code plugin catalog.
 - `codex/skills/review-multiactor/SKILL.md`: Codex review workflow.
-- `claude/skills/review-multiactor/SKILL.md`: original Claude Code review workflow.
+- `claude/skills/review-multiactor/SKILL.md`: Claude Code review workflow.
 
 The plugin contains its own skill instructions and has no build step or external runtime helper dependency.
