@@ -1,6 +1,6 @@
 # code-review-multifactor
 
-A standalone Claude Code and Codex plugin for multi-actor GitHub pull-request reviews. Version 1.1.0. MIT licensed.
+A standalone Claude Code and Codex plugin for multi-actor GitHub pull-request reviews. Version 1.1.1. MIT licensed.
 
 ## Install
 
@@ -30,12 +30,32 @@ In Claude Code, invoke the namespaced skill:
 /code-review-multifactor:review-multiactor OWNER/REPO#123
 ```
 
-In Codex, select `review-multiactor`, or invoke it with a pull-request URL or `OWNER/REPO#N` and an optional design document URL:
+In Codex, select `review-multiactor`, or invoke it with an optional pull-request URL, `OWNER/REPO#N`, or PR number when the repository is known, plus an optional design document URL:
 
 ```text
 $review-multiactor https://github.com/OWNER/REPO/pull/123
 $review-multiactor OWNER/REPO#123 https://example.com/design
+$review-multiactor 123
 ```
+
+Both hosts resolve the PR from the invocation, governing prompt, or caller context, including referenced handoff files. Without a supplied target, they discover the PR for the current branch in the matching repository. For example, run either command from a branch with an open PR:
+
+```text
+/code-review-multifactor:review-multiactor
+$review-multiactor
+```
+
+They ask only when the target cannot be resolved unambiguously or conflicting target instructions need clarification. A known PR's access failure is reported as an access problem.
+
+When called by dk-workflows, both hosts reuse supplied metadata, diffs, pinned commits, checkouts/worktrees, and discussion for the selected PR and comparison. They collect only missing inputs, preserve the caller's pinned comparison and review/output constraints, and keep freshness checks before authorized GitHub writes. A handoff can be referenced in the governing prompt without repeating the PR as a positional argument:
+
+```text
+Use $review-multiactor with the dk-workflows handoff at /tmp/pr-review/handoff.md.
+It identifies the PR and pinned comparison and supplies the diff and worktrees.
+Return findings locally; do not write to GitHub.
+```
+
+The same handoff instructions apply to Claude's `/code-review-multifactor:review-multiactor`. No workflow configuration changes or runtime helper are required.
 
 Each host's skill coordinates three native subagents:
 
@@ -45,7 +65,7 @@ Each host's skill coordinates three native subagents:
 
 The foreground agent reconciles findings and returns final comments to their source actors for validation. It prepares inline findings in the authenticated user's pending GitHub review and leaves submission to the user. Existing pending comments are preserved. A local-only request keeps all findings in the host conversation.
 
-Both workflows review in detached worktrees and propose improvements as diffs. Both pin the PR comparison and revalidate head, base, and merge-base changes before further review writes. Actors return findings without writing to GitHub. The Independent Inventor returns its test plan before receiving proposed tests or GitHub discussion.
+Both workflows reuse supplied checkouts at the pinned commits or prepare detached worktrees as needed, and propose improvements as diffs. Both preserve or pin the PR comparison and revalidate head, base, and merge-base changes before further review writes. Actors return findings without writing to GitHub. The Independent Inventor returns its test plan before receiving proposed tests or GitHub discussion.
 
 The Claude skill was adapted from the original `review-multiactor.md`. It retains its Opus, Fable, and Sonnet model requests with high effort. Codex uses its separately maintained native adaptation.
 

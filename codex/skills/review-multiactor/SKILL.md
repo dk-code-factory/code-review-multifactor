@@ -5,13 +5,21 @@ description: Review a GitHub pull request with three independent Codex subagents
 
 # Multi-actor PR review
 
-Invocation: `$review-multiactor <PR URL or OWNER/REPO#N> [design document URL]`. Ask for the PR if it is missing. The design document is optional. This skill runs a review; it does not implement fixes or submit the review.
+Invocation: `$review-multiactor [PR URL, OWNER/REPO#N, or number] [design document URL]`. Both arguments are optional; a number requires a known repository. This skill runs a review; it does not implement fixes or submit the review.
+
+## Resolve the PR and supplied context
+
+Before collecting review inputs, read the invocation, governing prompt, caller-provided context, and any referenced handoff files. Resolve the PR from those sources; do not ask for information already supplied. Resolve conflicting target instructions before reviewing; if the intended target remains ambiguous, ask a focused clarification.
+
+If no target is supplied, identify the matching repository and current branch, then use `gh pr view --json url,number` there or an available equivalent. Continue when discovery identifies one PR unambiguously. Ask which PR to review only when context and discovery cannot resolve a unique target. If a known PR is inaccessible, report the actual access or authentication problem instead of asking for its ID again.
+
+Inventory supplied PR metadata, diff, pinned commits, checkout/worktrees, issue/design context, and discussion. Reuse each usable input associated with the selected PR and comparison; fetch or prepare only missing material. Do not download or regenerate a supplied usable diff. Preserve the caller's pinned comparison, review constraints, and output/publication instructions, including local-only output. Reuse supplied review inputs without treating them as authorization for GitHub writes or bypassing the freshness checks below.
 
 ## Prepare the review
 
-Read applicable repository guidance. Identify the matching local clone, fetch the PR, and record its head SHA, base repository and ref, base SHA, and merge-base SHA. Pin the review diff from that merge base to the head. Review that pinned comparison throughout. Create detached worktrees for the head and merge base; never check out the PR in the user's working tree. Give actors separate scratch directories or worktrees when builds or probes could interfere. Do not change tracked source files; return proposed changes as diffs.
+Read applicable repository guidance. Using the supplied inputs first, identify the matching local clone and record the head SHA, base repository and ref, base SHA, and merge-base SHA. Fetch only missing metadata or Git objects. If the caller has not pinned a comparison, pin it from the merge base to the head. Obtain a diff only if a usable one was not supplied. Review that pinned comparison throughout. Reuse supplied checkouts/worktrees at the pinned commits; create detached worktrees only where needed for the head or comparison base. Never check out the PR in the user's working tree. Give actors separate scratch directories or worktrees when builds or probes could interfere. Do not change tracked source files; return proposed changes as diffs.
 
-Collect the issue or Jira work item, PR description, commit messages, diff, and complete GitHub discussion, including paginated inline threads, reviews, and general comments. Keep solution material out of the Independent Inventor's brief until its designated stage. Use available connected tools for Jira, GitHub, and design documents, or `gh` when appropriate. Report inaccessible sources as review limitations and continue with available evidence.
+Collect missing portions of the issue or Jira work item, PR description, commit messages, and complete GitHub discussion, including paginated inline threads, reviews, and general comments. Keep solution material out of the Independent Inventor's brief until its designated stage, including material from caller handoffs. Use available connected tools for Jira, GitHub, and design documents, or `gh` when appropriate. Report inaccessible sources as review limitations and continue with available evidence.
 
 Find the issue's parent epic, sibling work items, and sibling PR descriptions when relevant. Read the supplied or discoverable design document and relevant official product documentation, including DynamoDB documentation when the change concerns DynamoDB.
 
@@ -80,7 +88,7 @@ Send each complete final comment, including rewritten code comments and diffs, b
 
 Invoking this review workflow authorizes preparing private pending review comments. Honor any narrower user instruction such as a local-only review. Keep summary, verdict, and findings about commit messages, the PR description, or missing tests in the Codex conversation when they lack a valid inline anchor.
 
-Before each write, including a retry, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, stop adding comments and report the mismatch; refresh the comparison, review affected changes, and revalidate findings and inline anchors before continuing. Identify the authenticated GitHub account and its existing pending review for this PR. Reuse that review and preserve existing comments.
+Before each write, including a retry, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, stop adding comments and report the mismatch; refresh the comparison only within the caller's constraints, review affected changes, and revalidate findings and inline anchors before continuing. If the caller requires the original pins, keep findings local and report that GitHub writes are blocked. Identify the authenticated GitHub account and its existing pending review for this PR. Reuse that review and preserve existing comments.
 
 Use only a tool operation whose documented behavior leaves comments in a **PENDING** review. If no pending review exists, create one at the pinned head. With the [GitHub REST API](https://docs.github.com/en/rest/pulls/reviews#create-a-review-for-a-pull-request), creating a review with `commit_id` and inline `comments` while omitting `event` creates a pending review.
 
