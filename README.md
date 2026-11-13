@@ -1,6 +1,6 @@
 # code-review-multifactor
 
-A standalone Claude Code and Codex plugin for report-only multi-actor GitHub pull-request reviews. Version 1.1.2. MIT licensed.
+A standalone Claude Code and Codex plugin for report-only multi-actor GitHub pull-request reviews. Version 1.1.3. MIT licensed.
 
 ## Install
 
@@ -20,29 +20,31 @@ codex plugin add code-review-multifactor@code-review-multifactor
 
 Start a new host session after installation. This repository catalogs only its own plugin and requires no other review plugin. Each host manifest selects its own native skill directory.
 
-The repository and plugin are named `code-review-multifactor`. The included skill keeps its existing name, `review-multiactor`.
+The repository, plugin, and included skill are all named `code-review-multifactor`.
+
+Update saved skill invocations to `code-review-multifactor:code-review-multifactor`.
 
 ## Use
 
-In Claude Code, invoke the namespaced skill:
+In Claude Code, invoke the skill explicitly by name. Automatic model invocation is disabled with `disable-model-invocation: true`. Use the namespaced plugin command:
 
 ```text
-/code-review-multifactor:review-multiactor OWNER/REPO#123
+/code-review-multifactor:code-review-multifactor OWNER/REPO#123
 ```
 
-In Codex, select `review-multiactor`, or invoke it with an optional pull-request URL, `OWNER/REPO#N`, or PR number when the repository is known, plus an optional design document URL:
+In Codex, select `code-review-multifactor`, or invoke it with an optional pull-request URL, `OWNER/REPO#N`, or PR number when the repository is known, plus an optional design document URL:
 
 ```text
-$review-multiactor https://github.com/OWNER/REPO/pull/123
-$review-multiactor OWNER/REPO#123 https://example.com/design
-$review-multiactor 123
+$code-review-multifactor https://github.com/OWNER/REPO/pull/123
+$code-review-multifactor OWNER/REPO#123 https://example.com/design
+$code-review-multifactor 123
 ```
 
 Both hosts resolve the PR from the invocation, governing prompt, or caller context, including referenced handoff files. Without a supplied target, they discover the PR for the current branch in the matching repository. For example, run either command from a branch with an open PR:
 
 ```text
-/code-review-multifactor:review-multiactor
-$review-multiactor
+/code-review-multifactor:code-review-multifactor
+$code-review-multifactor
 ```
 
 They ask only when the target cannot be resolved unambiguously or conflicting target instructions need clarification. A known PR's access failure is reported as an access problem.
@@ -50,12 +52,12 @@ They ask only when the target cannot be resolved unambiguously or conflicting ta
 When called by dk-workflows or another workflow, both hosts reuse supplied metadata, diffs, pinned commits, checkouts/worktrees, and discussion for the selected PR and comparison. They collect only missing inputs, preserve the caller's pinned comparison, review constraints, and local output format, and check comparison freshness before finalizing the local report. A handoff can be referenced in the governing prompt without repeating the PR as a positional argument:
 
 ```text
-Use $review-multiactor with the dk-workflows handoff at /tmp/pr-review/handoff.md.
+Use $code-review-multifactor with the dk-workflows handoff at /tmp/pr-review/handoff.md.
 It identifies the PR and pinned comparison and supplies the diff and worktrees.
 Return the complete review and proposed comments/diffs in the conversation or linked local artifacts.
 ```
 
-The same handoff instructions apply to Claude's `/code-review-multifactor:review-multiactor`. No workflow configuration changes or runtime helper are required.
+The same handoff instructions apply to Claude's `/code-review-multifactor:code-review-multifactor`. No workflow configuration changes or runtime helper are required.
 
 Each host's skill coordinates three native subagents:
 
@@ -69,7 +71,7 @@ Neither host creates, appends to, modifies, submits, dismisses, or deletes GitHu
 
 Both workflows reuse supplied checkouts at the pinned commits or prepare detached worktrees as needed, and propose improvements as diffs. Both preserve or pin the PR comparison and report head, base, or merge-base changes and any freshness verification limits. The foreground agent and actors all follow the report-only boundary. The Independent Inventor returns its test plan before receiving proposed tests or GitHub discussion.
 
-The Claude skill was adapted from the original `review-multiactor.md`. It retains its Opus, Fable, and Sonnet model requests with high effort. Codex uses its separately maintained native adaptation.
+The Claude skill was adapted from the original Claude Code review skill. It retains its Opus, Fable, and Sonnet model requests with high effort. Codex uses its separately maintained native adaptation.
 
 ## Requirements
 
@@ -85,14 +87,14 @@ The Claude skill was adapted from the original `review-multiactor.md`. It retain
 - `.agents/plugins/marketplace.json`: Codex plugin catalog.
 - `.claude-plugin/plugin.json`: Claude Code plugin metadata.
 - `.claude-plugin/marketplace.json`: Claude Code plugin catalog.
-- `codex/skills/review-multiactor/SKILL.md`: Codex review workflow.
-- `claude/skills/review-multiactor/SKILL.md`: Claude Code review workflow.
+- `codex/skills/code-review-multifactor/SKILL.md`: Codex review workflow.
+- `claude/skills/code-review-multifactor/SKILL.md`: Claude Code review workflow.
 
 The plugin contains its own skill instructions and has no build step or external runtime helper dependency.
 
 ## Validation
 
-GitHub Actions validates both hosts' skill frontmatter, host skill paths, plugin/catalog metadata, release version consistency, and whitespace on pull requests and pushes to `main`.
+GitHub Actions validates both hosts' skill frontmatter, host skill paths, Claude's explicit invocation policy, plugin/catalog metadata, release version consistency, and whitespace on pull requests and pushes to `main`.
 
 Run the metadata and skill checks locally with:
 
