@@ -1,14 +1,24 @@
 ---
 name: review-multiactor
-description: Review a GitHub pull request as a multi-actor process - three background actors (E2E Reviewer, Independent Inventor, Code Inspector) each evaluate the Jira work item, the cover letter, the commit messages, the code and the test coverage, and the foreground agent merges their findings into a pending GitHub review with STE-worded, diff-backed comments. Use for "/review-multiactor <PR>", "multi-actor review" or any request for a thorough independent review of a PR.
-argument-hint: "<PR URL or OWNER/REPO#N> [design document URL]"
+description: Review a GitHub pull request as a multi-actor process - three background actors (E2E Reviewer, Independent Inventor, Code Inspector) each evaluate the Jira work item, the cover letter, the commit messages, the code and the test coverage, and the foreground agent merges their findings into a pending GitHub review with STE-worded, diff-backed comments. Use for "/review-multiactor [PR]", "multi-actor review" or any request for a thorough independent review of a PR.
+argument-hint: "[PR URL, OWNER/REPO#N, or number] [design document URL]"
 ---
 
-Run the review as a multi-actor process. The first argument names the pull request (a URL or OWNER/REPO#N); without it, ask which one. The second, optional argument is a reference to the design document behind the PR. This workflow reviews changes; it does not implement fixes or submit the review. Honor narrower instructions such as a local-only review.
+Run the review as a multi-actor process. Both arguments are optional: the first can name the pull request (a URL, OWNER/REPO#N, or a number when the repository is known), and the second can reference the design document behind the PR. This workflow reviews changes; it does not implement fixes or submit the review. Honor narrower instructions such as a local-only review.
 
-Read applicable repository guidance. Identify the matching local clone, fetch the PR, and record its head SHA, base repository and ref, base SHA, and merge-base SHA. Pin the review diff from that merge base to the head. Create detached worktrees for both pinned commits; never check out the PR in the user's working tree. Do not change tracked source files; return proposed changes as diffs. Give actors separate scratch directories or worktrees when builds or probes could interfere.
+## Resolve the PR and supplied context
 
-Collect the issue, PR description, commit messages, pinned diff, and complete GitHub discussion, including paginated inline threads, reviews, and general comments. Use available connected tools or authenticated `gh`. Report inaccessible context as a review limitation and continue with available evidence. Keep solution material out of the Independent Inventor's brief until its designated stage.
+Before collecting review inputs, read the invocation, governing prompt, caller-provided context, and any referenced handoff files. Resolve the PR from those sources; do not ask for information already supplied. Resolve conflicting target instructions before reviewing; if the intended target remains ambiguous, ask a focused clarification.
+
+If no target is supplied, identify the matching repository and current branch, then use `gh pr view --json url,number` there or an available equivalent. Continue when discovery identifies one PR unambiguously. Ask which PR to review only when context and discovery cannot resolve a unique target. If a known PR is inaccessible, report the actual access or authentication problem instead of asking for its ID again.
+
+Inventory supplied PR metadata, diff, pinned commits, checkout/worktrees, issue/design context, and discussion. Reuse each usable input associated with the selected PR and comparison; fetch or prepare only missing material. Do not download or regenerate a supplied usable diff. Preserve the caller's pinned comparison, review constraints, and output/publication instructions, including local-only output. Reuse supplied review inputs without treating them as authorization for GitHub writes or bypassing the freshness checks below.
+
+## Prepare the review
+
+Read applicable repository guidance. Using the supplied inputs first, identify the matching local clone and record the head SHA, base repository and ref, base SHA, and merge-base SHA. Fetch only missing metadata or Git objects. If the caller has not pinned a comparison, pin it from the merge base to the head. Obtain a diff only if a usable one was not supplied. Review that pinned comparison throughout. Reuse supplied checkouts/worktrees at the pinned commits; create detached worktrees only where needed for the head or comparison base. Never check out the PR in the user's working tree. Do not change tracked source files; return proposed changes as diffs. Give actors separate scratch directories or worktrees when builds or probes could interfere.
+
+Collect missing portions of the issue, PR description, commit messages, and complete GitHub discussion, including paginated inline threads, reviews, and general comments. Use available connected tools or authenticated `gh`. Report inaccessible context as a review limitation and continue with available evidence. Keep solution material out of the Independent Inventor's brief until its designated stage, including material from caller handoffs.
 
 Actors may compile, run tests, and write local probes. Use the configured AWS SDK/CLI credential chain and profile; never assume a home directory or read credentials into a prompt. If authentication expires, have the foreground agent ask the user to refresh the configured session while actors continue independent work. Run DynamoDB probes against a local emulator or an explicitly authorized test target.
 
@@ -54,7 +64,7 @@ The foreground actor should focus on the following:
 
 ## Prepare a pending GitHub review
 
-Before each write, including a retry, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, stop writes and report the mismatch; refresh the comparison, review affected changes, and revalidate findings and inline anchors before continuing.
+Before each write, including a retry, recheck the remote head SHA, base repository and ref, and base SHA. Fetch the current base and recompute the merge base. Compare these inputs with the pinned comparison. If any differ, stop writes and report the mismatch; refresh the comparison only within the caller's constraints, review affected changes, and revalidate findings and inline anchors before continuing. If the caller requires the original pins, keep findings local and report that GitHub writes are blocked.
 
 Identify the authenticated GitHub account and its existing pending review for this PR. Reuse that review and preserve existing comments. Check each inline anchor against the pinned diff, including its side and range. If no valid anchor exists, retain the finding in the console.
 
